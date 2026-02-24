@@ -1,10 +1,10 @@
-import { useState, useEffect, useRef, ChangeEvent } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { BankRecord, WellsFargoRecord } from '../types';
 import { RecordForm } from './RecordForm';
 import { RecordCard } from './RecordCard';
 import { TransactionManager } from './TransactionManager';
-import { Plus, Trash2, Database, LogOut, Download, Upload } from 'lucide-react';
+import { Plus, Trash2, Database, LogOut } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 export function Dashboard({ onLogout }: { onLogout: () => void }) {
@@ -13,7 +13,6 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingRecord, setEditingRecord] = useState<BankRecord | null>(null);
   const [managingTransactionsFor, setManagingTransactionsFor] = useState<WellsFargoRecord | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const fetchRecords = async () => {
     const { data, error } = await supabase
@@ -83,37 +82,6 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
     await fetchRecords();
   };
 
-  const handleExport = () => {
-    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(records));
-    const downloadAnchorNode = document.createElement('a');
-    downloadAnchorNode.setAttribute("href", dataStr);
-    downloadAnchorNode.setAttribute("download", "bank_records_backup.json");
-    document.body.appendChild(downloadAnchorNode);
-    downloadAnchorNode.click();
-    downloadAnchorNode.remove();
-  };
-
-  const handleImport = async (e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = async (event) => {
-      try {
-        const imported = JSON.parse(event.target?.result as string);
-        if (Array.isArray(imported)) {
-          for (const record of imported) {
-            await handleSave(record);
-          }
-          alert("导入成功！");
-        }
-      } catch (err) {
-        alert("导入失败，文件格式不正确");
-      }
-    };
-    reader.readAsText(file);
-    if (fileInputRef.current) fileInputRef.current.value = '';
-  };
-
   const activeRecords = records.filter(r => !r.isDeleted);
   const deletedRecords = records.filter(r => r.isDeleted);
 
@@ -160,27 +128,6 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
             新增记录
           </button>
           
-          <button
-            onClick={() => fileInputRef.current?.click()}
-            className="p-3 text-slate-400 hover:text-blue-600 transition-colors cursor-pointer bg-slate-100 dark:bg-slate-800/50 rounded-2xl ml-1"
-            title="导入数据"
-          >
-            <Upload className="w-5 h-5" />
-          </button>
-          <input 
-            type="file" 
-            ref={fileInputRef} 
-            onChange={handleImport} 
-            accept=".json" 
-            className="hidden" 
-          />
-          <button
-            onClick={handleExport}
-            className="p-3 text-slate-400 hover:text-blue-600 transition-colors cursor-pointer bg-slate-100 dark:bg-slate-800/50 rounded-2xl ml-1"
-            title="导出备份"
-          >
-            <Download className="w-5 h-5" />
-          </button>
           <button
             onClick={onLogout}
             className="p-3 text-slate-400 hover:text-red-500 transition-colors cursor-pointer bg-slate-100 dark:bg-slate-800/50 rounded-2xl ml-1"
