@@ -135,6 +135,15 @@ wire路由(Routing No): ${isLead ? r.routing : r.wire}
                 </div>
               </>
             )}
+            
+            {record.notes && (
+              <div className="mt-4 p-3 bg-amber-50 dark:bg-amber-900/20 rounded-xl border border-amber-100 dark:border-amber-900/30">
+                <p className="text-sm text-amber-800 dark:text-amber-200 whitespace-pre-wrap">
+                  <span className="font-semibold mr-1">备注:</span>
+                  {record.notes}
+                </p>
+              </div>
+            )}
           </div>
 
           <div className="flex items-center justify-between mt-auto pt-2">
