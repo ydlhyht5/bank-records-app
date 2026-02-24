@@ -1,0 +1,5 @@
+{
+  "name": "US Bank Account Manager",
+  "description": "A minimalist, secure management system for US bank accounts (Lead Bank & Wells Fargo).",
+  "requestFramePermissions": []
+}
