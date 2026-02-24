@@ -13,6 +13,7 @@ export interface BaseRecord {
   firstName: string;
   lastName: string;
   accountNo: string;
+  notes?: string;
   createdAt: number;
   isDeleted: boolean;
 }
