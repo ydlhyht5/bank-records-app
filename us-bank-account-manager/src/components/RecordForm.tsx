@@ -17,6 +17,7 @@ export function RecordForm({ record, onClose, onSave }: RecordFormProps) {
   const [firstName, setFirstName] = useState(record?.firstName || '');
   const [lastName, setLastName] = useState(record?.lastName || '');
   const [accountNo, setAccountNo] = useState(record?.accountNo || '');
+  const [notes, setNotes] = useState(record?.notes || '');
   
   // Lead Bank fields
   const [routing, setRouting] = useState((record as LeadBankRecord)?.routing || '');
@@ -49,6 +50,7 @@ export function RecordForm({ record, onClose, onSave }: RecordFormProps) {
       firstName,
       lastName,
       accountNo,
+      notes,
       createdAt: record?.createdAt || Date.now(),
       isDeleted: record?.isDeleted || false,
     };
@@ -156,6 +158,19 @@ export function RecordForm({ record, onClose, onSave }: RecordFormProps) {
                 <InputField label="银行地址" value="420 Montgomery Street, San Francisco, CA 94104" onChange={() => {}} disabled className="sm:col-span-2" />
               </>
             )}
+
+            <div className="sm:col-span-2 flex flex-col gap-1.5 mt-2">
+              <label className="text-xs font-medium text-slate-500 dark:text-slate-400 ml-1">
+                备注信息 (Notes)
+              </label>
+              <textarea
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                placeholder="输入任何需要备注的特殊信息..."
+                rows={3}
+                className="px-4 py-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all text-sm bg-slate-50 dark:bg-slate-800/50 border-slate-200/50 dark:border-slate-700/50 resize-none"
+              />
+            </div>
           </div>
 
           <div className="flex justify-end gap-3 pt-6 border-t border-slate-100 dark:border-slate-800">
