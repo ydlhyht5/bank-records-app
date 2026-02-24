@@ -10,6 +10,7 @@ import { supabase } from '../lib/supabase';
 export function Dashboard({ onLogout }: { onLogout: () => void }) {
   const [records, setRecords] = useState<BankRecord[]>([]);
   const [view, setView] = useState<'active' | 'recycle'>('active');
+  const [selectedBank, setSelectedBank] = useState<string | 'All'>('All');
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingRecord, setEditingRecord] = useState<BankRecord | null>(null);
   const [managingTransactionsFor, setManagingTransactionsFor] = useState<WellsFargoRecord | null>(null);
@@ -37,6 +38,7 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
       receiverAddress: record.receiveraddress,
       phoneLink: record.phonelink,
       phoneExpiry: record.phoneexpiry,
+      notes: record.notes,
       createdAt: record.createdat,
       isDeleted: record.isdeleted,
       transactions: record.transactions?.map((tx: any) => ({
@@ -74,6 +76,7 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
       phone: recordData.phone || null,
       phonelink: recordData.phoneLink || null,
       phoneexpiry: recordData.phoneExpiry || null,
+      notes: recordData.notes || null,
       createdat: recordData.createdAt,
       isdeleted: recordData.isDeleted ? true : false
     };
@@ -124,11 +127,16 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
   const activeRecords = records.filter(r => !r.isDeleted);
   const deletedRecords = records.filter(r => r.isDeleted);
 
-  const displayedRecords = view === 'active' ? activeRecords : deletedRecords;
+  const baseRecords = view === 'active' ? activeRecords : deletedRecords;
+  const uniqueBanks = Array.from(new Set(baseRecords.map(r => r.bankType)));
+  
+  const displayedRecords = selectedBank === 'All' 
+    ? baseRecords 
+    : baseRecords.filter(r => r.bankType === selectedBank);
 
   return (
     <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 min-h-screen flex flex-col">
-      <header className="flex flex-col sm:flex-row justify-between items-center mb-10 gap-6 glass-panel p-4 sm:p-6 rounded-3xl breathing-border">
+      <header className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-6 glass-panel p-4 sm:p-6 rounded-3xl breathing-border">
         <div className="flex items-center gap-4">
           <div className="w-12 h-12 bg-black dark:bg-white rounded-2xl flex items-center justify-center shadow-md">
             <Database className="text-white dark:text-black w-6 h-6" />
@@ -142,13 +150,13 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
         <div className="flex items-center gap-3 w-full sm:w-auto overflow-x-auto pb-2 sm:pb-0">
           <div className="flex bg-slate-100 dark:bg-slate-800/50 p-1.5 rounded-2xl">
             <button
-              onClick={() => setView('active')}
+              onClick={() => { setView('active'); setSelectedBank('All'); }}
               className={`px-5 py-2.5 rounded-xl text-sm font-medium transition-all cursor-pointer ${view === 'active' ? 'bg-white dark:bg-slate-700 shadow-sm text-black dark:text-white' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
             >
               活跃记录
             </button>
             <button
-              onClick={() => setView('recycle')}
+              onClick={() => { setView('recycle'); setSelectedBank('All'); }}
               className={`px-5 py-2.5 rounded-xl text-sm font-medium transition-all flex items-center gap-2 cursor-pointer ${view === 'recycle' ? 'bg-white dark:bg-slate-700 shadow-sm text-black dark:text-white' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
             >
               <Trash2 className="w-4 h-4" />
@@ -176,6 +184,26 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
           </button>
         </div>
       </header>
+
+      {uniqueBanks.length > 0 && (
+        <div className="flex gap-2 mb-8 overflow-x-auto pb-2 scrollbar-hide">
+          <button
+            onClick={() => setSelectedBank('All')}
+            className={`px-5 py-2.5 rounded-xl text-sm font-medium whitespace-nowrap transition-all cursor-pointer ${selectedBank === 'All' ? 'bg-slate-800 text-white dark:bg-white dark:text-black shadow-md' : 'bg-white text-slate-600 hover:bg-slate-100 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 shadow-sm'}`}
+          >
+            全部银行
+          </button>
+          {uniqueBanks.map(bank => (
+            <button
+              key={bank}
+              onClick={() => setSelectedBank(bank)}
+              className={`px-5 py-2.5 rounded-xl text-sm font-medium whitespace-nowrap transition-all cursor-pointer ${selectedBank === bank ? 'bg-blue-600 text-white shadow-md' : 'bg-white text-slate-600 hover:bg-slate-100 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 shadow-sm'}`}
+            >
+              {bank}
+            </button>
+          ))}
+        </div>
+      )}
 
       <main className="flex-1">
         <AnimatePresence mode="popLayout">
